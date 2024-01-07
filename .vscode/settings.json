@@ -3,6 +3,11 @@
         "string.h": "c",
         "stdio.h": "c",
         "stdlib.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "cmath": "c",
+        "limits": "c",
+        "new": "c",
+        "*.tcc": "c",
+        "typeinfo": "c"
     }
 }
