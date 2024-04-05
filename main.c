@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
         print_prompt();
         read_input(input_buffer);
 
-        if (strncmp(".", input_buffer->buffer, 2) == 0)
+        if (strncmp(".", input_buffer->buffer, 1) == 0)
         {
             switch (do_meta_command(input_buffer))
             {
