@@ -27,6 +27,7 @@ typedef enum
 typedef enum
 {
     PREPARE_SUCCESS,
+    PREPARE_SYNTAX_ERROR,
     PREPARE_UNRECOGNIZED_STATEMENT
 } PrepareResult;
 
@@ -66,15 +67,15 @@ const uint32_t ROW_SIZE = ID_SIZE+USERNAME_SIZE +EMAIL_SIZE;
 
 
 const uint32_t PAGE_SIZE = 4096; // 一页大小
-#define TABLE_MAX_PAFGES 100// 一个表的总页数
+#define TABLE_MAX_PAGES 100// 一个表的总页数
 const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE; // 一页有多少行
-const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE*TABLE_MAX_PAFGES;// 一个表有多少行
+const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE*TABLE_MAX_PAGES;// 一个表有多少行
 
 
 // 表的内存结构
 typedef struct{
     uint32_t num_rows;
-    void* pages[TABLE_MAX_PAFGES];
+    void* pages[TABLE_MAX_PAGES];
 } Table;
 
 
@@ -107,7 +108,21 @@ void*  row_slot(Table* table, uint32_t row_num){
     return page + byte_offset;  // 行在整个表的位置
 }
 
+Table* new_table() {
+  Table* table = (Table*)malloc(sizeof(Table));
+  table->num_rows = 0;
+  for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
+     table->pages[i] = NULL;
+  }
+  return table;
+}
 
+void free_table(Table* table) {
+  for (int i = 0; table->pages[i]; i++) {
+     free(table->pages[i]);
+  }
+  free(table);
+}
 
 
 
@@ -143,10 +158,12 @@ void close_input_buffer(InputBuffer *input_buffer)
     free(input_buffer);
 }
 
-MetaCommandResult do_meta_command(InputBuffer *input_buffer)
+MetaCommandResult do_meta_command(InputBuffer *input_buffer,Table *table)
 {
     if (strcmp(input_buffer->buffer, ".exit") == 0)
     {
+        close_input_buffer(input_buffer);
+        free_table(table);
         exit(EXIT_SUCCESS);
     }
     else
@@ -211,6 +228,7 @@ ExecuteResult  execute_statement(Statement *statement, Table* table)
 
 int main(int argc, char *argv[])
 {
+    Table* table = new_table();
     InputBuffer *input_buffer = new_input_buffer();
     while (true)
     {
@@ -219,7 +237,7 @@ int main(int argc, char *argv[])
 
         if (strncmp(".", input_buffer->buffer, 1) == 0)
         {
-            switch (do_meta_command(input_buffer))
+            switch (do_meta_command(input_buffer,table))
             {
             case (MATE_COMMAND_SUCCESS):
                 continue;
@@ -237,12 +255,22 @@ int main(int argc, char *argv[])
             /* code */
             break;
 
-        case (PREPARE_UNRECOGNIZED_STATEMENT):
+        case (PREPARE_SYNTAX_ERROR):
             printf("Unrecogniezed keyword at start of '%s'.\n", input_buffer->buffer);
+            continue;
+
+        case (PREPARE_UNRECOGNIZED_STATEMENT):
+            printf("unrecongnized keyword at start of '%s'.\n  ",input_buffer->buffer);
             continue;
         }
 
-        execute_statement(&statement);
+        switch (execute_statement(&statement,table)){
+           case (EXECUTE_SUCCESS):
+             printf("EXECUTED,\n");
+           case (EXECUTE_TABLE_FULL):
+             printf("ERROR: table full .\n");
+             break;
+        }
         printf("Executed.\n");
     }
 }
