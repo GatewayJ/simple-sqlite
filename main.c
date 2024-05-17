@@ -27,6 +27,8 @@ typedef enum
 typedef enum
 {
     PREPARE_SUCCESS,
+    PREPPARE_NEGATIVE_ID,
+    PREPARE_STRING_TOO_LONG,
     PREPARE_SYNTAX_ERROR,
     PREPARE_UNRECOGNIZED_STATEMENT
 } PrepareResult;
@@ -43,8 +45,8 @@ typedef enum
 typedef struct
 {
     uint32_t id;
-    char username[COLUMN_USERNAME_SIZE];
-    char email[COLUMN_EMAIL_SIZE];
+    char username[COLUMN_USERNAME_SIZE+1];
+    char email[COLUMN_EMAIL_SIZE+1];
 } Row;
 
 
@@ -85,9 +87,9 @@ void print_row(Row* row){
 
 // 将标量拷贝到内存的目的位置
 void serialize_row(Row* source,void* destination){
-    memcpy(destination + ID_OFFSET,&(source->id),ID_OFFSET), 
-    memcpy(destination + USERNAME_OFFSET,&(source->username),USERNAME_OFFSET),
-    memcpy(destination + EMAIL_OFFSET,&(source->email),EMAIL_OFFSET);
+    memcpy(destination + ID_OFFSET,&(source->id),ID_SIZE), 
+    memcpy(destination + USERNAME_OFFSET,&(source->username),USERNAME_SIZE),
+    memcpy(destination + EMAIL_OFFSET,&(source->email),EMAIL_SIZE);
 }
 
 void deserialize_row(void* source,Row* destination){
@@ -172,12 +174,36 @@ MetaCommandResult do_meta_command(InputBuffer *input_buffer,Table *table)
     }
 }
 
+
+PrepareResult prepare_insert(InputBuffer *input_buffer, Statement *statement){
+    statement->type = STATEMENT_INSERT;
+    char * keyword = strtok(input_buffer->buffer," ");
+    char * id_string = strtok(NULL," ");
+    char * username = strtok(NULL," ");
+    char * email = strtok(NULL," ");
+    if (keyword == NULL || id_string ==NULL || username == NULL || email == NULL){
+        return PREPARE_SYNTAX_ERROR;
+    }
+    int id = atoi(id_string)  ;
+    if (strlen(username) > COLUMN_EMAIL_SIZE){
+        return PREPARE_STRING_TOO_LONG;
+    }
+    if (strlen(email)> COLUMN_EMAIL_SIZE){
+        return PREPARE_STRING_TOO_LONG;
+    }
+    statement->row_to_insert.id = id;
+    strcpy(statement->row_to_insert.username,username);
+    strcpy(statement->row_to_insert.email,email);
+
+    return PREPARE_SUCCESS;
+} 
+
+
 PrepareResult prepare_statement(InputBuffer *input_buffer, Statement *statement)
 {
     if (strncmp(input_buffer->buffer, "insert", 6) == 0)
     {
-        statement->type = STATEMENT_INSERT;
-        return PREPARE_SUCCESS;
+        return prepare_insert(input_buffer,statement);
     }
     if (strcmp(input_buffer->buffer, "select") == 0)
     {
@@ -255,6 +281,10 @@ int main(int argc, char *argv[])
             /* code */
             break;
 
+        case (PREPARE_STRING_TOO_LONG):
+            printf("strint is too long\n");
+            continue;
+
         case (PREPARE_SYNTAX_ERROR):
             printf("Unrecogniezed keyword at start of '%s'.\n", input_buffer->buffer);
             continue;
@@ -266,11 +296,11 @@ int main(int argc, char *argv[])
 
         switch (execute_statement(&statement,table)){
            case (EXECUTE_SUCCESS):
-             printf("EXECUTED,\n");
+             printf("Executed.\n");
+             break;
            case (EXECUTE_TABLE_FULL):
              printf("ERROR: table full .\n");
              break;
         }
-        printf("Executed.\n");
     }
 }

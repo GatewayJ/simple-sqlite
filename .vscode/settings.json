@@ -9,5 +9,6 @@
         "new": "c",
         "*.tcc": "c",
         "typeinfo": "c"
-    }
+    },
+    "cmake.configureOnOpen": false
 }
