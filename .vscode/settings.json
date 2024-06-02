@@ -8,7 +8,8 @@
         "limits": "c",
         "new": "c",
         "*.tcc": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "random": "c"
     },
     "cmake.configureOnOpen": false
 }
