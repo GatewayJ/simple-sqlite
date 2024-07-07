@@ -15,10 +15,13 @@
             "type": "cppdbg",
             "request": "launch",
             "name": "Gcc Compile",
-            "program": "${workspaceFolder}${pathSeparator}${fileBasenameNoExtension}.o",
+            "program": "${workspaceFolder}${pathSeparator}main.o",
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "MIMode": "gdb"
+            "MIMode": "gdb",
+            "args": [
+                "database.txt"
+            ]
         }
     ]
 }
