@@ -194,6 +194,10 @@ void *get_page(Pager *pager, uint32_t page_num)
             }
         }
         pager->pages[page_num] = page;
+        if (page_num >= pager->num_pages)
+        {
+            pager->num_pages = page_num + 1;
+        }
     }
 
     return pager->pages[page_num];
@@ -303,7 +307,7 @@ void db_close(Table *table)
 
     for (uint32_t i = 0; i < pager->num_pages; i++)
     {
-        if (pager->pages[i] = NULL)
+        if (pager->pages[i] == NULL)
         {
             continue;
         }
