@@ -9,7 +9,8 @@
         "new": "c",
         "*.tcc": "c",
         "typeinfo": "c",
-        "random": "c"
+        "random": "c",
+        "cstdint": "c"
     },
     "cmake.configureOnOpen": false
 }
